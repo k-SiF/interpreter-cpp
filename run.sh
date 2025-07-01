@@ -22,5 +22,5 @@ set -e # Exit early if any commands fail
 #
 # - Edit this to change how your program runs locally
 # - Edit .codecrafters/run.sh to change how your program runs remotely
-exec $(dirname $0)/build/interpreter "$@" TOOLCHAIN your_program.sh
+exec $(dirname $0)/build/interpreter "$@" TOOLCHAIN run.sh
 
