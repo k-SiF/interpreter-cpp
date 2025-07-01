@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/home/parthenon/Repository/codecrafters-interpreter-cpp/build",
+  "command": "/sbin/g++ -g -std=gnu++23 -o CMakeFiles/interpreter.dir/src/main.cpp.o -c /home/parthenon/Repository/codecrafters-interpreter-cpp/src/main.cpp",
+  "file": "/home/parthenon/Repository/codecrafters-interpreter-cpp/src/main.cpp",
+  "output": "CMakeFiles/interpreter.dir/src/main.cpp.o"
+}
+]

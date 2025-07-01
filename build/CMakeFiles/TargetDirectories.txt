@@ -1,0 +1,3 @@
+/home/parthenon/Repository/codecrafters-interpreter-cpp/build/CMakeFiles/interpreter.dir
+/home/parthenon/Repository/codecrafters-interpreter-cpp/build/CMakeFiles/edit_cache.dir
+/home/parthenon/Repository/codecrafters-interpreter-cpp/build/CMakeFiles/rebuild_cache.dir

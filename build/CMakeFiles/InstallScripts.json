@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/parthenon/Repository/codecrafters-interpreter-cpp/build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
