@@ -12,6 +12,7 @@ struct Token {
     enum class Type {
         LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE, STAR,
         DOT, COMMA, PLUS, MINUS, SEMICOLON, RETURN, EQUAL, EQUAL_EQUAL,
+        BANG, BANG_EQUAL,
         EOF_TOKEN
     };
     Type type;
@@ -72,8 +73,6 @@ std::vector<Token> scan(const std::string& source, bool& err) {
     bool connected = true;
     for (const char c : source) {
         switch(c) {
-            case ' ': connected = false; break;
-            case '\t': break;
             case '(': tokens.push_back(Token{Token::Type::LEFT_PAREN, "(", line}); break;
             case ')': tokens.push_back(Token{Token::Type::RIGHT_PAREN, ")", line}); break;
             case '{': tokens.push_back(Token{Token::Type::LEFT_BRACE, "{", line}); break;
@@ -86,14 +85,16 @@ std::vector<Token> scan(const std::string& source, bool& err) {
             case ';': tokens.push_back(Token{Token::Type::SEMICOLON, ";", line}); break;
             case '=': { 
                 auto prev_tok = prev_token(tokens);
-                if (connected && prev_tok != nullptr && (prev_tok->type == Token::Type::EQUAL && prev_tok->line == line)) {
-                    replace_token(tokens, Token{Token::Type::EQUAL_EQUAL, "==", line});
-                } else {
-                    tokens.push_back(Token{Token::Type::EQUAL, "=", line});
-                    connected = true;
-                } break;
+                if (connected && prev_tok != nullptr && prev_tok->line == line) {
+                    if (prev_tok->type == Token::Type::EQUAL) { replace_token(tokens, Token{Token::Type::EQUAL_EQUAL, "==", line}); break; }
+                    if (prev_tok->type == Token::Type::BANG) { replace_token(tokens, Token{Token::Type::BANG_EQUAL, "!=", line}); break; }
+                } 
+                tokens.push_back(Token{Token::Type::EQUAL, "=", line}); connected = true; break;
             }
+            case '!': tokens.push_back(Token{Token::Type::BANG, "!", line}); break;
             case '\n': { tokens.push_back(Token{Token::Type::RETURN, "\\n", line}); line++; break; }
+            case ' ': connected = false; break;
+            case '\t': break;
             default: std::cerr << std::format("[line {}] Error: Unexpected character: {}", line, c) << std::endl; err = true; break;
         }
     }
@@ -143,6 +144,8 @@ std::string type_to_string(Token::Type t) {
         case Token::Type::SEMICOLON: return "SEMICOLON";
         case Token::Type::EQUAL: return "EQUAL";
         case Token::Type::EQUAL_EQUAL: return "EQUAL_EQUAL";
+        case Token::Type::BANG: return "BANG";
+        case Token::Type::BANG_EQUAL: return "BANG_EQUAL";
         case Token::Type::RETURN: return "RETURN";
         case Token::Type::EOF_TOKEN: return "EOF";
         default: return "UNKNOWN";
