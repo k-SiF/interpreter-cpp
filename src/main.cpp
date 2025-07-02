@@ -5,20 +5,35 @@
 #include <string>
 #include <format>
 #include <vector>
+#include <variant>
+
+using Literal = std::variant<std::monostate, std::string, double, bool>;
 
 const int EXIT_LEXICAL_ERROR = 65;
+
+enum class ScanState {
+    NORMAL, STRING, COMMENT
+};
 
 struct Token {
     enum class Type {
         LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE, STAR,
         DOT, COMMA, PLUS, MINUS, SEMICOLON, RETURN, EQUAL, EQUAL_EQUAL,
         BANG, BANG_EQUAL, LESS, LESS_EQUAL, GREATER, GREATER_EQUAL,
-        SLASH,
+        SLASH, STRING,
         EOF_TOKEN
     };
     Type type;
     std::string lexeme;
+    Literal literal = std::monostate{};
     int line;
+
+    Token(Type type, std::string lexeme, int line)
+        : type(type), lexeme(std::move(lexeme)), line(line) {}
+
+    Token(Type type, std::string lexeme, Literal literal, int line)
+        : type(type), lexeme(std::move(lexeme)), literal(std::move(literal)), line(line) {}
+
 };
 
 struct Error {
@@ -29,7 +44,7 @@ struct Error {
 std::string read_file_contents(const std::string& filename);
 std::vector<Token> lexer(const std::string& content, bool& err);
 std::string type_to_string(Token::Type t);
-const Token* prev_token(const std::vector<Token>& tokens);
+Token* prev_token(std::vector<Token>& tokens);
 void replace_token(std::vector<Token>& tokens, const Token& token);
 
 int main(int argc, char *argv[]) {
@@ -52,8 +67,10 @@ int main(int argc, char *argv[]) {
         if (!file_contents.empty()) {
             std::vector<Token> tokens = lexer(file_contents, err);
 
-            for (const Token& token : tokens) {
-                std::cout << std::format("{} {} null", type_to_string(token.type), token.lexeme) << std::endl;
+            for (Token& token : tokens) {
+                if (!std::holds_alternative<std::string>(token.literal)) token.literal = std::string("null");
+                //else if (std::holds_alternative<double>(token.literal)) token.literal = std::to_string(token.literal);
+                std::cout << std::format("{} {} {}", type_to_string(token.type), token.lexeme, std::get<std::string>(token.literal)) << std::endl;
             }
 
             if (err) return EXIT_LEXICAL_ERROR;
@@ -70,11 +87,38 @@ int main(int argc, char *argv[]) {
 
 std::vector<Token> lexer(const std::string& source, bool& err) {
     std::vector<Token> tokens;
+    ScanState scan_state = ScanState::NORMAL;
     int line = 1;
     bool connected = true;
-    bool skip_line = false;
-    for (const char c : source) {
-        if(skip_line && c != '\n') continue;
+    for (size_t i = 0; i < source.size(); ++i) {
+        char c = source[i];
+        bool is_last = (i == source.size() - 1);
+        switch (scan_state)
+        {
+        case ScanState::COMMENT: {
+            if (c != '\n') continue;
+            scan_state = ScanState::NORMAL;
+            break;
+        }
+        case ScanState::STRING: {
+            if (c != '\"') {
+                if(is_last) {
+                    std::cerr << std::format("[line {}] Error: Unterminated string.", line) << std::endl;
+                    tokens.pop_back();
+                    err = true;
+                    continue;
+                }
+                if (tokens.empty() || prev_token(tokens)->type != Token::Type::STRING) tokens.push_back(Token{Token::Type::STRING, "", std::string(1, c), line});
+                else std::get<std::string>(prev_token(tokens)->literal).push_back(c);
+            } else {
+                prev_token(tokens)->lexeme = '\"' + std::get<std::string>(prev_token(tokens)->literal) + '\"';
+                scan_state = ScanState::NORMAL;
+            }
+            continue;
+        }
+        default: break;
+        }
+
         switch(c) {
             case '(': tokens.push_back(Token{Token::Type::LEFT_PAREN, "(", line}); break;
             case ')': tokens.push_back(Token{Token::Type::RIGHT_PAREN, ")", line}); break;
@@ -101,20 +145,21 @@ std::vector<Token> lexer(const std::string& source, bool& err) {
             case '>': tokens.push_back(Token{Token::Type::GREATER, ">", line}); break;
             case '/': {
                 auto prev_tok = prev_token(tokens);
-                if (connected && prev_tok != nullptr && prev_tok->line == line)
-                    if(prev_tok->type == Token::Type::SLASH) { 
-                        tokens.pop_back();
-                        skip_line = true; break; 
-                    }
+                if (connected && prev_tok != nullptr && prev_tok->line == line && prev_tok->type == Token::Type::SLASH) {
+                    tokens.pop_back();
+                    scan_state = ScanState::COMMENT; 
+                    break; 
+                }
                 tokens.push_back(Token{Token::Type::SLASH, "/", line}); connected = true; break;
             }
-            case '\n': connected = skip_line = false; line++; break;
+            case '\"': scan_state = ScanState::STRING; break;
+            case '\n': connected = false; line++; break;
             case ' ': connected = false; break;
             case '\t': connected = false; break;
             default: std::cerr << std::format("[line {}] Error: Unexpected character: {}", line, c) << std::endl; err = true; break;
         }
     }
-    tokens.push_back(Token{Token::Type::EOF_TOKEN, ""});
+    tokens.push_back(Token{Token::Type::EOF_TOKEN, "", line});
     return tokens;
 }
 
@@ -125,7 +170,7 @@ void replace_token(std::vector<Token>& tokens, const Token& token) {
     }
 }
 
-const Token* prev_token(const std::vector<Token>& tokens) {
+Token* prev_token(std::vector<Token>& tokens) {
     if (!tokens.empty()) {
         return &tokens.back();
     }
@@ -167,6 +212,7 @@ std::string type_to_string(Token::Type t) {
         case Token::Type::GREATER: return "GREATER";
         case Token::Type::GREATER_EQUAL: return "GREATER_EQUAL";
         case Token::Type::SLASH: return "SLASH";
+        case Token::Type::STRING: return "STRING";
         //case Token::Type::RETURN: return "RETURN";
         case Token::Type::EOF_TOKEN: return "EOF";
         default: return "UNKNOWN";
