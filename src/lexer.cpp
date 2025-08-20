@@ -4,7 +4,7 @@ Lexer::Lexer() {}
 
 Lexer::~Lexer() {}
 
-std::vector<Token> Lexer::lexer(const std::string &source, bool &err)
+std::vector<Token> Lexer::lexer(const std::string &source)
 {
     source_size = source.size();
     for (size_t i = 0; i < source_size; ++i) {
@@ -218,4 +218,8 @@ std::string Lexer::type_to_string(Token::Type t) {
         case Token::Type::EOF_TOKEN: return "EOF";
         default: return "UNKNOWN";
     }
+}
+
+bool Lexer::error_check(){
+    return err;
 }

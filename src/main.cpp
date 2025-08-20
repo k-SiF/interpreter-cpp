@@ -1,19 +1,26 @@
+#include <sstream>
 #include <cstring>
 #include <fstream>
-#include <iostream>
+#include "libraries.h"
 #include "lexer.h"
+#include "parser.h"
 
 const int EXIT_LEXICAL_ERROR = 65;
 const int EXIT_PARSING_ERROR = 40;
 
-struct Error {
-    int line;
-    std::string message;
+struct LexerResult {
+    int status;
+    std::vector<Token> tokens;
+};
+
+struct ParserResult {
+    int status;
+    std::unique_ptr<Expr> ast;
 };
 
 std::string read_file_contents(const std::string& filename);
-int tokenize(char *argv[]);
-int parser(char *argv[]);
+void tokenizer(char *argv[], LexerResult& lexer_r);
+void parser(char *argv[], LexerResult& lexer_r, ParserResult& parser_r);
 
 int main(int argc, char *argv[]) {
     // Disable output buffering
@@ -24,55 +31,59 @@ int main(int argc, char *argv[]) {
         std::cerr << "Usage: ./your_program tokenize <filename>" << std::endl;
         return EXIT_FAILURE;
     }
+
+    LexerResult lexer_r;
+    ParserResult parser_r;
     
     const std::string command = argv[1];
     
     // LEXER
     if (command == "tokenize") {
-        return tokenize(argv);
+        tokenizer(argv, lexer_r);
     } 
     // PARSER
-    // else if (command == "parse") {
-    //     bool err = false;
-    //     std::string file_contents = read_file_contents(argv[2]);
-
-    //     if (!file_contents.empty()) {
-
-    //         if (err) return EXIT_PARSING_ERROR;
-    //     }
-    // } else {
-    //     std::cerr << "Unknown command: " << command << std::endl;
-    //     return EXIT_FAILURE;
-    // }
+    else if (command == "parse") {
+        parser(argv, lexer_r, parser_r);
+    } else {
+        std::cerr << "Unknown command: " << command << std::endl;
+        return EXIT_FAILURE;
+    }
     return EXIT_SUCCESS;
 }
 
-int tokenize(char *argv[]) {
-    bool err = false;
+void tokenizer(char *argv[], LexerResult& lexer_r) {
     std::string file_contents = read_file_contents(argv[2]);
     
     if (!file_contents.empty()) {
         Lexer lexer;
-        std::vector<Token> tokens = lexer.lexer(file_contents, err);
+        lexer_r.tokens = lexer.lexer(file_contents);
 
-        for (Token& token : tokens) {
+        for (Token& token : lexer_r.tokens) {
             if (std::holds_alternative<std::monostate>(token.literal)) token.literal = std::string("null");
             //else if (std::holds_alternative<double>(token.literal)) token.literal = std::to_string(std::get<double>(token.literal));
             std::cout << std::format("{} {} {}", lexer.type_to_string(token.type), token.lexeme, std::get<std::string>(token.literal)) << std::endl;
         }
+        if (lexer.error_check()) lexer_r.status = EXIT_LEXICAL_ERROR;
 
-        if (err) return EXIT_LEXICAL_ERROR;
     } else {
         std::cout << "EOF  null" << std::endl;
     }
-
-    return EXIT_SUCCESS;
+    lexer_r.status = EXIT_SUCCESS;
 }
 
-int parser(char *argv[]) {
+void parser(char *argv[], LexerResult& lexer_r, ParserResult& parser_r) {
     bool err = false;
-    
-    return EXIT_SUCCESS;
+    std::string file_contents = read_file_contents(argv[2]);
+
+    if (!file_contents.empty()) {
+        tokenizer(argv, lexer_r);
+        Parser parser(lexer_r.tokens);
+        parser_r.ast = parser.parse();
+        parser.print_ast(parser_r.ast.get());
+        std::cout << std::endl;
+        if (err) parser_r.status = EXIT_PARSING_ERROR;
+    }
+    parser_r.status = EXIT_SUCCESS;
 }
 
 std::string read_file_contents(const std::string& filename) {
