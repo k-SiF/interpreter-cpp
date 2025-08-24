@@ -98,6 +98,18 @@ std::unique_ptr<Expr> Parser::factor() {
         double value = std::stod(std::get<std::string>(consume().literal));
         return std::make_unique<Literal>(value);
     }
+
+    if (peek().type == Token::Type::TRUE) { consume(); return std::make_unique<Literal>(true); }
+    if (peek().type == Token::Type::FALSE) { consume(); return std::make_unique<Literal>(false); }
+
+    if (peek().type == Token::Type::LEFT_PAREN) {
+        auto expr = op();
+        expected(Token::Type::RIGHT_PAREN);
+        return expr;
+    }
+
+    if (peek().type == Token::Type::NIL) { consume(); return std::make_unique<Literal>(std::monostate{}); }
+
     throw std::runtime_error("Expected number or '('");
 }
 
@@ -106,7 +118,7 @@ static void print_value(const std::variant<std::monostate, double, std::string, 
     std::visit([](auto const& x) {
         using T = std::decay_t<decltype(x)>;
         if constexpr (std::is_same_v<T, std::monostate>) {
-            std::cout << "null";
+            std::cout << "nil";
         } else if constexpr (std::is_same_v<T, bool>) {
             std::cout << (x ? "true" : "false");
         } else {
