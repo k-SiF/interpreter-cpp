@@ -19,8 +19,8 @@ struct ParserResult {
 };
 
 std::string read_file_contents(const std::string& filename);
-void tokenizer(char *argv[], LexerResult& lexer_r);
-void parser(char *argv[], LexerResult& lexer_r, ParserResult& parser_r);
+void tokenizer(char *argv[], LexerResult& lexer_r, bool debug_mode = false);
+void parser(char *argv[], LexerResult& lexer_r, ParserResult& parser_r, bool debug_mode = false);
 
 int main(int argc, char *argv[]) {
     // Disable output buffering
@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
     std::cerr << std::unitbuf;
     
     if (argc < 3) {
-        std::cerr << "Usage: ./your_program tokenize <filename>" << std::endl;
+        std::cerr << "Usage: ./your_program [tokenize | parse] <filename>" << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -39,11 +39,19 @@ int main(int argc, char *argv[]) {
     
     // LEXER
     if (command == "tokenize") {
-        tokenizer(argv, lexer_r);
+        if (argc > 3 && std::string(argv[3]) == "debug") {
+            std::cout << "[DEBUG MODE]" << std::endl;
+            tokenizer(argv, lexer_r, true);
+        }
+        else tokenizer(argv, lexer_r);
     } 
     // PARSER
     else if (command == "parse") {
-        parser(argv, lexer_r, parser_r);
+        if (argc > 3 && std::string(argv[3]) == "debug") { 
+            std::cout << "[DEBUG MODE]" << std::endl;
+            parser(argv, lexer_r, parser_r, true);
+        }
+        else parser(argv, lexer_r, parser_r);
     } else {
         std::cerr << "Unknown command: " << command << std::endl;
         return EXIT_FAILURE;
@@ -51,18 +59,21 @@ int main(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-void tokenizer(char *argv[], LexerResult& lexer_r) {
+void tokenizer(char *argv[], LexerResult& lexer_r, bool debug_mode) {
     std::string file_contents = read_file_contents(argv[2]);
     
     if (!file_contents.empty()) {
         Lexer lexer;
         lexer_r.tokens = lexer.lexer(file_contents);
 
-        for (Token& token : lexer_r.tokens) {
-            if (std::holds_alternative<std::monostate>(token.literal)) token.literal = std::string("null");
-            //else if (std::holds_alternative<double>(token.literal)) token.literal = std::to_string(std::get<double>(token.literal));
-            std::cout << std::format("{} {} {}", lexer.type_to_string(token.type), token.lexeme, std::get<std::string>(token.literal)) << std::endl;
+        if (debug_mode) {
+            for (Token& token : lexer_r.tokens) {
+                if (std::holds_alternative<std::monostate>(token.literal)) token.literal = std::string("null");
+                //else if (std::holds_alternative<double>(token.literal)) token.literal = std::to_string(std::get<double>(token.literal));
+                std::cout << std::format("{} {} {}", lexer.type_to_string(token.type), token.lexeme, std::get<std::string>(token.literal)) << std::endl;
+            }
         }
+
         if (lexer.error_check()) lexer_r.status = EXIT_LEXICAL_ERROR;
 
     } else {
@@ -71,7 +82,7 @@ void tokenizer(char *argv[], LexerResult& lexer_r) {
     lexer_r.status = EXIT_SUCCESS;
 }
 
-void parser(char *argv[], LexerResult& lexer_r, ParserResult& parser_r) {
+void parser(char *argv[], LexerResult& lexer_r, ParserResult& parser_r, bool debug_mode) {
     bool err = false;
     std::string file_contents = read_file_contents(argv[2]);
 
@@ -79,7 +90,7 @@ void parser(char *argv[], LexerResult& lexer_r, ParserResult& parser_r) {
         tokenizer(argv, lexer_r);
         Parser parser(lexer_r.tokens);
         parser_r.ast = parser.parse();
-        parser.print_ast(parser_r.ast.get());
+        if (debug_mode) parser.print_ast(parser_r.ast.get());
         std::cout << std::endl;
         if (err) parser_r.status = EXIT_PARSING_ERROR;
     }

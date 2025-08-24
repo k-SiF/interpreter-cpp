@@ -95,7 +95,7 @@ std::unique_ptr<Expr> Parser::term() {
 
 std::unique_ptr<Expr> Parser::factor() {
     if (peek().type == Token::Type::NUMBER) {
-        double value = std::stod(consume().lexeme);
+        double value = std::stod(std::get<std::string>(consume().literal));
         return std::make_unique<Literal>(value);
     }
     throw std::runtime_error("Expected number or '('");
