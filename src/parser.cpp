@@ -1,17 +1,15 @@
 #include "parser.h"
 
 // The parser constructs an Abstract Syntax Tree (AST) using the tokens from the buffer created by the lexer.
-// Given the input 2 + 3 * 4, the parser should give us an tree following this structure: 
+// Given the input 2 + 3 * 4, the parser should give us a tree following this structure: 
 //                              (2 + (3 * 4)) 
-// The tree would look something like this (not literally this is just a visualisation of it):
+// The tree would look something like this:
 //                                  +
 //                                 / \
 //                                2   *
 //                                   / \
 //                                  3   4
 //
-// With how abstract this is it becomes quite confusing, 
-// I needed a bit of time to try processing the sequence and how each step would translate into code.
 
 Parser::Parser(const std::vector<Token>& tokens) : tokens(tokens) {}
 
@@ -98,11 +96,13 @@ std::unique_ptr<Expr> Parser::factor() {
         double value = std::stod(std::get<std::string>(consume().literal));
         return std::make_unique<Literal>(value);
     }
+    if (peek().type == Token::Type::STRING) return std::make_unique<Literal>(std::get<std::string>(consume().literal));
 
     if (peek().type == Token::Type::TRUE) { consume(); return std::make_unique<Literal>(true); }
     if (peek().type == Token::Type::FALSE) { consume(); return std::make_unique<Literal>(false); }
 
     if (peek().type == Token::Type::LEFT_PAREN) {
+        consume();
         auto expr = op();
         expected(Token::Type::RIGHT_PAREN);
         return expr;
@@ -143,21 +143,3 @@ void Parser::print_ast(const Expr* expr) {
 bool Parser::error_check() {
     return err;
 }
-
-// int main() {
-//     // Manually building the AST for "2 + 3 * 4"
-//     auto left = std::make_unique<Literal>(2);
-//     auto right = std::make_unique<Binary>(
-//         std::make_unique<Literal>(3),
-//         "*",
-//         std::make_unique<Literal>(4)
-//     );
-//     auto ast = std::make_unique<Binary>(std::move(left), "+", std::move(right));
-
-//     // Printing the AST
-//     print_ast(ast.get()); // Should print: (2 + (3 * 4))
-//     std::cout << std::endl;
-
-//     return 0;
-// }
-
