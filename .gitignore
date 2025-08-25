@@ -3,6 +3,6 @@ build/
 .vscode/
 
 # Files
-./parser
-./notes.txt
-./test.lox
+parser
+notes.txt
+test.lox
