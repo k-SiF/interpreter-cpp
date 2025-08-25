@@ -91,16 +91,16 @@ std::vector<Token> Lexer::lexer(const std::string &source)
             case '=': { 
                 auto prev_tok = prev_token(tokens);
                 if (connected && prev_tok != nullptr && prev_tok->line == line) {
-                    if (prev_tok->type == Token::Type::EQUAL) { replace_token(tokens, Token{Token::Type::EQUAL_EQUAL, "==", line}); break; }
-                    if (prev_tok->type == Token::Type::BANG) { replace_token(tokens, Token{Token::Type::BANG_EQUAL, "!=", line}); break; }
-                    if (prev_tok->type == Token::Type::LESS) { replace_token(tokens, Token{Token::Type::LESS_EQUAL, "<=", line}); break; }
-                    if (prev_tok->type == Token::Type::GREATER) { replace_token(tokens, Token{Token::Type::GREATER_EQUAL, ">=", line}); break; }
+                    if (prev_tok->type == Token::Type::EQUAL) { replace_token(tokens, Token{Token::Type::EQUAL_EQUAL, "==", line}); connected = false; break; }
+                    if (prev_tok->type == Token::Type::BANG) { replace_token(tokens, Token{Token::Type::BANG_EQUAL, "!=", line}); connected = false; break; }
+                    if (prev_tok->type == Token::Type::LESS) { replace_token(tokens, Token{Token::Type::LESS_EQUAL, "<=", line}); connected = false; break; }
+                    if (prev_tok->type == Token::Type::GREATER) { replace_token(tokens, Token{Token::Type::GREATER_EQUAL, ">=", line}); connected = false; break; }
                 } 
                 tokens.push_back(Token{Token::Type::EQUAL, "=", line}); connected = true; break;
             }
-            case '!': tokens.push_back(Token{Token::Type::BANG, "!", line}); break;
-            case '<': tokens.push_back(Token{Token::Type::LESS, "<", line}); break;
-            case '>': tokens.push_back(Token{Token::Type::GREATER, ">", line}); break;
+            case '!': tokens.push_back(Token{Token::Type::BANG, "!", line}); connected = true; break;
+            case '<': tokens.push_back(Token{Token::Type::LESS, "<", line}); connected = true; break;
+            case '>': tokens.push_back(Token{Token::Type::GREATER, ">", line}); connected = true; break;
             case '/': {
                 auto prev_tok = prev_token(tokens);
                 if (connected && prev_tok != nullptr && prev_tok->line == line && prev_tok->type == Token::Type::SLASH) {
