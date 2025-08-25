@@ -35,7 +35,7 @@ struct Unary : public Expr {
 
 class Parser {
     private:
-        std::unique_ptr<Expr> ast;
+        std::vector<std::unique_ptr<Expr>> ast;
         std::vector<Token> tokens;
         Token current_token;
         std::vector<Token::Type> operators = {Token::Type::PLUS, Token::Type::MINUS, Token::Type::SLASH, Token::Type::STAR};
@@ -47,11 +47,12 @@ class Parser {
         Parser(const std::vector<Token>& tokens);
         ~Parser();
 
-        std::unique_ptr<Expr> parse();
+        std::vector<std::unique_ptr<Expr>> parse();
         bool match(Token::Type type);
         bool check_any(int offset, std::initializer_list<Token::Type> types);
 
         // Grammar rule
+        std::vector<std::unique_ptr<Expr>> program();
         std::unique_ptr<Expr> expression();
         std::unique_ptr<Expr> equality();
         std::unique_ptr<Expr> comparison();
@@ -61,6 +62,7 @@ class Parser {
         std::unique_ptr<Expr> primary();
 
         void print_ast(const Expr* expr);
+        void print_program(const std::vector<std::unique_ptr<Expr>>& stmts);
         
         Token consume();
         Token peek(int offset = 0);

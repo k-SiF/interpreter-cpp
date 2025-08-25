@@ -15,7 +15,7 @@ struct LexerResult {
 
 struct ParserResult {
     int status;
-    std::unique_ptr<Expr> ast;
+    std::vector<std::unique_ptr<Expr>> ast;
 };
 
 std::string read_file_contents(const std::string& filename);
@@ -90,7 +90,7 @@ void parser(char *argv[], LexerResult& lexer_r, ParserResult& parser_r, bool deb
         tokenizer(argv, lexer_r);
         Parser parser(lexer_r.tokens);
         parser_r.ast = parser.parse();
-        if (debug_mode) parser.print_ast(parser_r.ast.get());
+        if (debug_mode) parser.print_program(parser_r.ast);
         std::cout << std::endl;
         if (err) parser_r.status = EXIT_PARSING_ERROR;
     }

@@ -15,9 +15,17 @@ Parser::Parser(const std::vector<Token>& tokens) : tokens(tokens) {}
 
 Parser::~Parser() {}
 
-std::unique_ptr<Expr> Parser::parse(){
-    size_t buffer_size = tokens.size();   
-    return expression();
+std::vector<std::unique_ptr<Expr>> Parser::parse(){
+    size_t buffer_size = tokens.size();  
+    return program();
+}
+
+std::vector<std::unique_ptr<Expr>> Parser::program() {
+   std::vector<std::unique_ptr<Expr>> stmts;
+    while (peek().type != Token::Type::EOF_TOKEN) {
+        stmts.push_back(expression());
+    } 
+    return stmts;
 }
 
 std::unique_ptr<Expr> Parser::expression() {
@@ -92,7 +100,7 @@ std::unique_ptr<Expr> Parser::primary() {
     }
     if (peek().type == Token::Type::LEFT_PAREN) {
         consume();
-        auto expr = expression();
+        auto expr = equality();
         expected(Token::Type::RIGHT_PAREN, ")");
         return expr;
     }
@@ -101,7 +109,9 @@ std::unique_ptr<Expr> Parser::primary() {
     if (peek().type == Token::Type::FALSE) { consume(); return std::make_unique<Literal>(false); }
     if (peek().type == Token::Type::NIL) { consume(); return std::make_unique<Literal>(std::monostate{}); }
     
-    throw std::runtime_error("Expected number | ')' | string | boolean");
+    err = true;
+    std::string error_msg = std::format("[line {}] Error at '{}': Expected number | ')' | string | boolean", peek().line, peek().lexeme);
+    throw std::runtime_error(error_msg);
 }
 
 bool Parser::match(Token::Type type) {
@@ -119,7 +129,7 @@ Token Parser::expected(Token::Type type, const char* type_s) {
     } else {
         err = true;
         std::ostringstream oss;
-        oss << "Expected a '" << type_s << "'.";
+        oss << std::format("[line {}] Error at '{}': Expected a '{}'", peek().line, peek().lexeme, type_s);
         throw std::runtime_error(oss.str());
     }
 }
@@ -181,6 +191,13 @@ void Parser::print_ast(const Expr* expr) {
         std::cout << "(" << bin->op << " ";
         print_ast(bin->expr.get());
         std::cout << ")";
+    }
+}
+
+void Parser::print_program(const std::vector<std::unique_ptr<Expr>>& stmts) {
+    for (const std::unique_ptr<Expr>& expr : stmts) {
+        print_ast(expr.get());
+        std::cout << std::endl;
     }
 }
 
