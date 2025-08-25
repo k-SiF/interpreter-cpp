@@ -24,6 +24,15 @@ struct Binary : public Expr {
         : left(std::move(left)), op(std::move(op)), right(std::move(right)) {} 
 };
 
+// ! and - expressions
+struct Unary : public Expr {
+    std::string op;
+    std::unique_ptr<Expr> expr;
+
+    Unary(std::string op, std::unique_ptr<Expr> expr)
+        : op(std::move(op)), expr(std::move(expr)) {}
+};
+
 class Parser {
     private:
         std::unique_ptr<Expr> ast;
@@ -41,14 +50,21 @@ class Parser {
         std::unique_ptr<Expr> parse();
         bool match(Token::Type type);
         bool check_any(int offset, std::initializer_list<Token::Type> types);
-        std::unique_ptr<Expr> op();
+
+        // Grammar rule
+        std::unique_ptr<Expr> expression();
+        std::unique_ptr<Expr> equality();
+        std::unique_ptr<Expr> comparison();
         std::unique_ptr<Expr> term();
         std::unique_ptr<Expr> factor();
+        std::unique_ptr<Expr> unary();
+        std::unique_ptr<Expr> primary();
+
         void print_ast(const Expr* expr);
         
         Token consume();
         Token peek(int offset = 0);
-        Token expected(Token::Type type);
+        Token expected(Token::Type type, const char* type_s = "default");
         Token expect_any(int offset, std::initializer_list<Token::Type> types);
 
         bool error_check();

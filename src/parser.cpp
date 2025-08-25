@@ -17,7 +17,91 @@ Parser::~Parser() {}
 
 std::unique_ptr<Expr> Parser::parse(){
     size_t buffer_size = tokens.size();   
-    return op();
+    return expression();
+}
+
+std::unique_ptr<Expr> Parser::expression() {
+    auto left = equality();
+    expected(Token::Type::SEMICOLON, ";");
+    return left;
+}
+
+std::unique_ptr<Expr> Parser::equality() {
+    auto left = comparison();
+    
+    while (peek().type == Token::Type::EQUAL_EQUAL || peek().type == Token::Type::BANG_EQUAL) {
+        Token op = consume();
+        auto right = comparison();
+        left = std::make_unique<Binary>(std::move(left), op.lexeme, std::move(right));
+    }
+
+    return left;
+}
+
+std::unique_ptr<Expr> Parser::comparison() {
+    auto left = term();
+    
+    while (peek().type == Token::Type::GREATER || peek().type == Token::Type::GREATER_EQUAL || peek().type == Token::Type::LESS || peek().type == Token::Type::LESS_EQUAL) {
+        Token op = consume();
+        auto right = term();
+        left = std::make_unique<Binary>(std::move(left), op.lexeme, std::move(right));
+    }
+    
+    return left;
+}
+
+std::unique_ptr<Expr> Parser::term() {
+    auto left = factor();
+    
+    while (peek().type == Token::Type::PLUS || peek().type == Token::Type::MINUS) {
+        Token op = consume();
+        auto right = factor();
+        left = std::make_unique<Binary>(std::move(left), op.lexeme, std::move(right));
+    }
+    
+    return left;
+}
+
+std::unique_ptr<Expr> Parser::factor() {
+    auto left = unary();
+    
+    while (peek().type == Token::Type::STAR || peek().type == Token::Type::SLASH) {
+        Token op = consume();
+        auto right = unary();
+        left = std::make_unique<Binary>(std::move(left), op.lexeme, std::move(right));
+    }
+    
+    return left;
+}
+
+std::unique_ptr<Expr> Parser::unary() {
+    if (peek().type == Token::Type::BANG || peek().type == Token::Type::MINUS) {
+        Token op = consume();
+        auto expr = unary();
+        auto left = std::make_unique<Unary>(op.lexeme, std::move(expr));
+        return left;
+    }
+    
+    return primary();
+}
+
+std::unique_ptr<Expr> Parser::primary() {
+    if (peek().type == Token::Type::NUMBER) {
+        double value = std::stod(std::get<std::string>(consume().literal));
+        return std::make_unique<Literal>(value);
+    }
+    if (peek().type == Token::Type::LEFT_PAREN) {
+        consume();
+        auto expr = expression();
+        expected(Token::Type::RIGHT_PAREN, ")");
+        return expr;
+    }
+    if (peek().type == Token::Type::STRING) return std::make_unique<Literal>(std::get<std::string>(consume().literal));
+    if (peek().type == Token::Type::TRUE) { consume(); return std::make_unique<Literal>(true); }
+    if (peek().type == Token::Type::FALSE) { consume(); return std::make_unique<Literal>(false); }
+    if (peek().type == Token::Type::NIL) { consume(); return std::make_unique<Literal>(std::monostate{}); }
+    
+    throw std::runtime_error("Expected number | ')' | string | boolean");
 }
 
 bool Parser::match(Token::Type type) {
@@ -29,13 +113,13 @@ bool Parser::match(Token::Type type) {
     }
 }
 
-Token Parser::expected(Token::Type type) {
+Token Parser::expected(Token::Type type, const char* type_s) {
     if (peek().type == type) {
         return consume();
     } else {
         err = true;
         std::ostringstream oss;
-        oss << "Unexpected token: " << peek(0).lexeme;
+        oss << "Expected a '" << type_s << "'.";
         throw std::runtime_error(oss.str());
     }
 }
@@ -69,50 +153,6 @@ Token Parser::peek(int offset) {
     return tokens[i];
 }
 
-std::unique_ptr<Expr> Parser::op() {
-    auto left = term();
-
-    while (peek().type == Token::Type::PLUS || peek().type == Token::Type::MINUS) {
-        Token op = consume();
-        auto right = term();
-        left = std::make_unique<Binary>(std::move(left), op.lexeme, std::move(right));
-    }
-    return left;
-}
-
-std::unique_ptr<Expr> Parser::term() {
-    auto left = factor();
-
-    while (peek().type == Token::Type::STAR || peek().type == Token::Type::SLASH) {
-        Token op = consume();
-        auto right = term();
-        left = std::make_unique<Binary>(std::move(left), op.lexeme, std::move(right));
-    }
-    return left;
-}
-
-std::unique_ptr<Expr> Parser::factor() {
-    if (peek().type == Token::Type::NUMBER) {
-        double value = std::stod(std::get<std::string>(consume().literal));
-        return std::make_unique<Literal>(value);
-    }
-    if (peek().type == Token::Type::STRING) return std::make_unique<Literal>(std::get<std::string>(consume().literal));
-
-    if (peek().type == Token::Type::TRUE) { consume(); return std::make_unique<Literal>(true); }
-    if (peek().type == Token::Type::FALSE) { consume(); return std::make_unique<Literal>(false); }
-
-    if (peek().type == Token::Type::LEFT_PAREN) {
-        consume();
-        auto expr = op();
-        expected(Token::Type::RIGHT_PAREN);
-        return expr;
-    }
-
-    if (peek().type == Token::Type::NIL) { consume(); return std::make_unique<Literal>(std::monostate{}); }
-
-    throw std::runtime_error("Expected number or '('");
-}
-
 // Utility printer for variant
 static void print_value(const std::variant<std::monostate, double, std::string, bool>& v) {
     std::visit([](auto const& x) {
@@ -136,6 +176,10 @@ void Parser::print_ast(const Expr* expr) {
         print_ast(bin->left.get());
         std::cout << " " << bin->op << " ";
         print_ast(bin->right.get());
+        std::cout << ")";
+    } else if (auto bin = dynamic_cast<const Unary*>(expr)) {
+        std::cout << "(" << bin->op << " ";
+        print_ast(bin->expr.get());
         std::cout << ")";
     }
 }
