@@ -1,5 +1,0 @@
-Grammar:
-
-P    -> Expr
-Expr -> Term Expr* ;
-Term -> TOKEN
