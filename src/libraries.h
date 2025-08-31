@@ -8,7 +8,9 @@
 #include <iostream>
 #include <stdexcept>
 #include <sstream>
+#include <iomanip>
 
 namespace lib {
     using Literal = std::variant<std::monostate, std::string, double, bool>;
+    using Byte = uint8_t;
 }
