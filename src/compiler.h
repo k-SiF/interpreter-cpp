@@ -20,6 +20,7 @@ class Compiler {
 
         std::vector<uint8_t> compile();
         size_t add_constant(const std::variant<std::monostate, double, std::string, bool>&  c);
+        std::vector<std::variant<double, std::string, bool>> get_constant_pool();
         
         void literal_handler(Literal *expr);
         void binary_handler(Binary *expr);

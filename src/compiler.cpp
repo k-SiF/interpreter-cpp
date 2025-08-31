@@ -17,9 +17,9 @@ std::vector<uint8_t> Compiler::compile() {
         } else if (auto expr = dynamic_cast<Unary*>(_ast)) {
             unary_handler(expr);
         }
+        
+        bytecode.push_back(RETURN);
     }
-
-    bytecode.push_back(RETURN);
     
     return bytecode;
 }
@@ -86,6 +86,11 @@ size_t Compiler::add_constant(const std::variant<std::monostate, double, std::st
             return constant_pool.size() - 1;
         }
     }, constant);
+}
+
+std::vector<std::variant<double, std::string, bool>> Compiler::get_constant_pool()
+{
+    return constant_pool;
 }
 
 void Compiler::print_bytecode() {
