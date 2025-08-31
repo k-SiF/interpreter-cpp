@@ -4,6 +4,7 @@
 #include "libraries.h"
 #include "lexer.h"
 #include "parser.h"
+#include "compiler.h"
 
 const int EXIT_LEXICAL_ERROR = 65;
 const int EXIT_PARSING_ERROR = 40;
@@ -18,9 +19,15 @@ struct ParserResult {
     std::vector<std::unique_ptr<Expr>> ast;
 };
 
+struct CompilerResult {
+    int status;
+    std::vector<uint8_t> bytecode;
+};
+
 std::string read_file_contents(const std::string& filename);
 void tokenizer(char *argv[], LexerResult& lexer_r, bool debug_mode = false);
 void parser(char *argv[], LexerResult& lexer_r, ParserResult& parser_r, bool debug_mode = false);
+void compile(char *argv[], LexerResult& lexer_r, ParserResult& parser_r, CompilerResult& compiler_r, bool debug_mode = false);
 
 int main(int argc, char *argv[]) {
     // Disable output buffering
@@ -34,6 +41,7 @@ int main(int argc, char *argv[]) {
 
     LexerResult lexer_r;
     ParserResult parser_r;
+    CompilerResult compiler_r;
     
     const std::string command = argv[1];
     
@@ -52,6 +60,14 @@ int main(int argc, char *argv[]) {
             parser(argv, lexer_r, parser_r, true);
         }
         else parser(argv, lexer_r, parser_r);
+    }
+    // COMPILER
+    else if (command == "compile") {
+        if (argc > 3 && std::string(argv[3]) == "debug") { 
+            std::cout << "[DEBUG MODE]" << std::endl;
+            compile(argv, lexer_r, parser_r, compiler_r, true);
+        }
+        else compile(argv, lexer_r, parser_r, compiler_r);
     } else {
         std::cerr << "Unknown command: " << command << std::endl;
         return EXIT_FAILURE;
@@ -95,6 +111,19 @@ void parser(char *argv[], LexerResult& lexer_r, ParserResult& parser_r, bool deb
         if (err) parser_r.status = EXIT_PARSING_ERROR;
     }
     parser_r.status = EXIT_SUCCESS;
+}
+
+void compile(char *argv[], LexerResult& lexer_r, ParserResult& parser_r, CompilerResult& compiler_r, bool debug_mode) {
+    bool err = false;
+    std::string file_contents = read_file_contents(argv[2]);
+
+    if (!file_contents.empty()) {
+        parser(argv, lexer_r, parser_r, true);
+        Compiler compiler(parser_r.ast);
+        compiler_r.bytecode = compiler.compile();
+        if (debug_mode) compiler.print_bytecode();
+        std::cout << std::endl;
+    }
 }
 
 std::string read_file_contents(const std::string& filename) {
