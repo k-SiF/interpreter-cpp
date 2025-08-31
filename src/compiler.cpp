@@ -27,12 +27,25 @@ void Compiler::handler(Expr *_ast)
         unary_handler(expr);
     } else if (auto expr = dynamic_cast<Function*>(_ast)) {
         function_handler(expr);
+    } else if (auto expr = dynamic_cast<Variable*>(_ast)) {
+        variable_handler(expr);
     }
 }
 
 void Compiler::literal_handler(Literal *expr)
 {
-    size_t constant_index = add_constant(expr->value);
+    if (std::holds_alternative<std::string>(expr->value)) {
+        for (size_t i = 0; i < variable_pool.size(); i++)
+        {
+            if (variable_pool[i] == std::get<std::string>(expr->value)) {
+                bytecode.push_back(VAR);
+                bytecode.push_back(static_cast<uint8_t>(i));
+                return;
+            }
+        }
+        
+    }
+    constant_index = add_constant(expr->value);
 
     // Emit OP_CODE CONSTANT with index
     bytecode.push_back(CON);
@@ -96,6 +109,28 @@ void Compiler::function_handler(Function *expr)
     }
 }
 
+void Compiler::variable_handler(Variable *expr)
+{
+    // Right side
+    if (auto _expr = dynamic_cast<Literal*>(expr->right.get())) {
+        literal_handler(_expr);
+    } else if (auto _expr = dynamic_cast<Binary*>(expr->right.get())) {
+        binary_handler(_expr);
+    } else if (auto _expr = dynamic_cast<Unary*>(expr->right.get())) {
+        unary_handler(_expr);
+    }   
+
+    // Left side
+    size_t var_index = add_variable(expr->left.lexeme);
+
+    // Declaration
+    if (expr->op == "=") {
+        variable_map[var_index] = constant_index;
+        bytecode.push_back(VAR);
+        bytecode.push_back(static_cast<uint8_t>(var_index));
+    }
+}
+
 size_t Compiler::add_constant(const std::variant<std::monostate, double, std::string, bool>& constant) {
     return std::visit([&](auto&& c) -> size_t {
         using T = std::decay_t<decltype(c)>;
@@ -116,9 +151,30 @@ size_t Compiler::add_constant(const std::variant<std::monostate, double, std::st
     }, constant);
 }
 
+size_t Compiler::add_variable(std::string &c)
+{
+    for (size_t i = 0; i < variable_pool.size(); i++)
+    {
+        if (variable_pool[i] == c) return i;
+    }
+    
+    variable_pool.push_back(c);
+    return variable_pool.size() - 1;
+}
+
 std::vector<std::variant<double, std::string, bool>> Compiler::get_constant_pool()
 {
     return constant_pool;
+}
+
+std::vector<std::string> Compiler::get_variable_pool()
+{
+    return variable_pool;
+}
+
+std::unordered_map<size_t, size_t> Compiler::get_variable_map()
+{
+    return variable_map;
 }
 
 void Compiler::print_bytecode() {

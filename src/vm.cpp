@@ -1,7 +1,8 @@
 #include "vm.h"
 
-VM::VM(const std::vector<uint8_t>& bytecode, const std::vector<std::variant<double, std::string, bool>>& constant_pool) 
-    : bytecode(bytecode), constant_pool(constant_pool) {}
+VM::VM(const std::vector<uint8_t>& bytecode, const std::vector<std::variant<double, std::string, bool>>& constant_pool,
+       const std::vector<std::string>& variable_pool, const std::unordered_map<size_t, size_t>& variable_map) 
+    : bytecode(bytecode), constant_pool(constant_pool), variable_pool(variable_pool), variable_map(variable_map) {}
 
 VM::~VM() {}
 
@@ -21,7 +22,6 @@ void print_stack(const std::vector<std::variant<double, std::string, bool>>& sta
 
 void VM::execute() {
     std::vector<std::variant<double, std::string, bool>> stack;
-
     for (size_t i = 0; i < bytecode.size(); i++)
     {
         switch (bytecode[i])
@@ -88,6 +88,13 @@ void VM::execute() {
                 } else if (auto v = std::get_if<bool>(&literal)) {
                     print_value(std::to_string(*v));
                 }
+                break;
+            }
+            case VAR: {
+                uint8_t var_index = bytecode[++i];
+                uint8_t con_index = variable_map.at(static_cast<size_t>(var_index));
+                std::cout << con_index;
+                stack.push_back(constant_pool[con_index]);
                 break;
             }
             case RETURN: {

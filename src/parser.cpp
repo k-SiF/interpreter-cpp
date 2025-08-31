@@ -37,6 +37,14 @@ std::unique_ptr<Expr> Parser::expression() {
         left = std::make_unique<Function>(std::move(fun), std::move(left));
         expected(Token::Type::SEMICOLON, ";");
         return left;
+    } else if (peek().type == Token::Type::VAR) {
+        consume();
+        Token id = expected(Token::Type::IDENTIFIER);
+        std::string op = expected(Token::Type::EQUAL).lexeme;
+        auto left = equality();
+        left = std::make_unique<Variable>(std::move(id), op, std::move(left));
+        expected(Token::Type::SEMICOLON, ";");
+        return left;
     } else {
         auto left = equality();
         expected(Token::Type::SEMICOLON, ";");
@@ -115,6 +123,7 @@ std::unique_ptr<Expr> Parser::primary() {
         expected(Token::Type::RIGHT_PAREN, ")");
         return expr;
     }
+    if (peek().type == Token::Type::IDENTIFIER) return std::make_unique<Literal>(consume().lexeme);
     if (peek().type == Token::Type::STRING) return std::make_unique<Literal>(std::get<std::string>(consume().literal));
     if (peek().type == Token::Type::TRUE) { consume(); return std::make_unique<Literal>(true); }
     if (peek().type == Token::Type::FALSE) { consume(); return std::make_unique<Literal>(false); }

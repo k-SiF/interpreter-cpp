@@ -5,9 +5,12 @@ class VM {
     private:
         const std::vector<uint8_t>& bytecode;
         const std::vector<std::variant<double, std::string, bool>>& constant_pool;
+        const std::vector<std::string>& variable_pool;
+        const std::unordered_map<size_t, size_t>& variable_map;
 
     public:
-        VM(const std::vector<uint8_t>& bytecode, const std::vector<std::variant<double, std::string, bool>>& constant_pool);
+        VM(const std::vector<uint8_t>& bytecode, const std::vector<std::variant<double, std::string, bool>>& constant_pool,
+           const std::vector<std::string>& variable_pool, const std::unordered_map<size_t, size_t>& variable_map);
         ~VM();
 
         void execute();

@@ -41,6 +41,15 @@ struct Function : public Expr {
         : type(std::move(type)), expr(std::move(expr)) {}
 };
 
+struct Variable : public Expr {
+    Token left;
+    std::string op;
+    std::unique_ptr<Expr> right;
+
+    Variable(Token left, std::string op, std::unique_ptr<Expr> right)
+        : left(std::move(left)), op(std::move(op)), right(std::move(right)) {} 
+};
+
 class Parser {
     private:
         std::vector<std::unique_ptr<Expr>> ast;
