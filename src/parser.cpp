@@ -1,6 +1,6 @@
 #include "parser.h"
 
-// The parser constructs an Abstract Syntax Tree (AST) using the tokens from the buffer created by the lexer.
+// Constructs an Abstract Syntax Tree (AST) using the tokens from the buffer created by the lexer.
 // Given the input 2 + 3 * 4, the parser should give us a tree following this structure: 
 //                              (2 + (3 * 4)) 
 // The tree would look something like this:
