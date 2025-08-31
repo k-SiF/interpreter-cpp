@@ -5,6 +5,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "compiler.h"
+#include "vm.h"
 
 const int EXIT_LEXICAL_ERROR = 65;
 const int EXIT_PARSING_ERROR = 40;
@@ -22,6 +23,7 @@ struct ParserResult {
 struct CompilerResult {
     int status;
     std::vector<uint8_t> bytecode;
+    std::vector<std::variant<double, std::string, bool>> constant_pool;
 };
 
 std::string read_file_contents(const std::string& filename);
@@ -121,8 +123,12 @@ void compile(char *argv[], LexerResult& lexer_r, ParserResult& parser_r, Compile
         parser(argv, lexer_r, parser_r, true);
         Compiler compiler(parser_r.ast);
         compiler_r.bytecode = compiler.compile();
+        compiler_r.constant_pool = compiler.get_constant_pool();
         if (debug_mode) compiler.print_bytecode();
         std::cout << std::endl;
+        VM vm(compiler_r.bytecode, compiler_r.constant_pool);
+        std::cout << "RESULT:\n";
+        vm.execute();
     }
 }
 
