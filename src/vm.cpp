@@ -55,8 +55,43 @@ void VM::execute() {
                 stack.push_back(std::get<double>(a) / std::get<double>(b));
                 break;
             }
+            case GRT: {
+                auto b = stack.back(); stack.pop_back();
+                auto a = stack.back(); stack.pop_back();
+                stack.push_back(std::get<double>(a) > std::get<double>(b));
+                break;
+            }
+            case GRTE: {
+                auto b = stack.back(); stack.pop_back();
+                auto a = stack.back(); stack.pop_back();
+                stack.push_back(std::get<double>(a) >= std::get<double>(b));
+                break;
+            }
+            case LSS: {
+                auto b = stack.back(); stack.pop_back();
+                auto a = stack.back(); stack.pop_back();
+                stack.push_back(std::get<double>(a) < std::get<double>(b));
+                break;
+            }
+            case LSSE: {
+                auto b = stack.back(); stack.pop_back();
+                auto a = stack.back(); stack.pop_back();
+                stack.push_back(std::get<double>(a) <= std::get<double>(b));
+                break;
+            }
+            case PRINT: {
+                auto literal = stack.back(); stack.pop_back();
+                if (auto v = std::get_if<std::string>(&literal)) {
+                    print_value(*v);
+                } else if (auto v = std::get_if<double>(&literal)){
+                    print_value(std::to_string(*v));
+                } else if (auto v = std::get_if<bool>(&literal)) {
+                    print_value(std::to_string(*v));
+                }
+                break;
+            }
             case RETURN: {
-                print_value(stack.back());
+                //print_value(stack.back());
                 std::cout << "\n";
                 break;
             }

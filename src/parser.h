@@ -33,6 +33,14 @@ struct Unary : public Expr {
         : op(std::move(op)), expr(std::move(expr)) {}
 };
 
+struct Function : public Expr {
+    Token::Type type;
+    std::unique_ptr<Expr> expr;
+
+    Function(Token::Type type, std::unique_ptr<Expr> expr)
+        : type(std::move(type)), expr(std::move(expr)) {}
+};
+
 class Parser {
     private:
         std::vector<std::unique_ptr<Expr>> ast;

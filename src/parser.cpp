@@ -29,9 +29,20 @@ std::vector<std::unique_ptr<Expr>> Parser::program() {
 }
 
 std::unique_ptr<Expr> Parser::expression() {
-    auto left = equality();
-    expected(Token::Type::SEMICOLON, ";");
-    return left;
+    if (peek().type == Token::Type::PRINT) {
+        Token::Type fun = consume().type;
+        expected(Token::Type::LEFT_PAREN);
+        auto left = equality();
+        expected(Token::Type::RIGHT_PAREN);
+        left = std::make_unique<Function>(std::move(fun), std::move(left));
+        expected(Token::Type::SEMICOLON, ";");
+        return left;
+    } else {
+        auto left = equality();
+        expected(Token::Type::SEMICOLON, ";");
+        return left;
+    }
+    return {};
 }
 
 std::unique_ptr<Expr> Parser::equality() {

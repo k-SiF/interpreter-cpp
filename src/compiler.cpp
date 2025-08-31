@@ -10,18 +10,24 @@ std::vector<uint8_t> Compiler::compile() {
     for (size_t i = 0; i < ast.size(); i++)
     {
         auto _ast = ast[i].get();
-        if (auto expr = dynamic_cast<Literal*>(_ast)) {
-            literal_handler(expr);
-        } else if (auto expr = dynamic_cast<Binary*>(_ast)) {
-            binary_handler(expr);
-        } else if (auto expr = dynamic_cast<Unary*>(_ast)) {
-            unary_handler(expr);
-        }
-        
+        handler(_ast);
         bytecode.push_back(RETURN);
     }
     
     return bytecode;
+}
+
+void Compiler::handler(Expr *_ast)
+{
+    if (auto expr = dynamic_cast<Literal*>(_ast)) {
+        literal_handler(expr);
+    } else if (auto expr = dynamic_cast<Binary*>(_ast)) {
+        binary_handler(expr);
+    } else if (auto expr = dynamic_cast<Unary*>(_ast)) {
+        unary_handler(expr);
+    } else if (auto expr = dynamic_cast<Function*>(_ast)) {
+        function_handler(expr);
+    }
 }
 
 void Compiler::literal_handler(Literal *expr)
@@ -61,11 +67,33 @@ void Compiler::binary_handler(Binary *expr)
         case '-': bytecode.push_back(SUB); break;
         case '*': bytecode.push_back(MUL); break;
         case '/': bytecode.push_back(DIV); break;
+        case '>': {
+            if (expr->op.size() > 1 && expr->op[1] == '=') bytecode.push_back(GRTE);
+            else bytecode.push_back(GRT); 
+            break;
+        }
+        case '<': {
+            if (expr->op.size() > 1 && expr->op[1] == '=') bytecode.push_back(LSSE);
+            else bytecode.push_back(LSS); 
+            break;
+        }
+        case '!': {
+            if (expr->op.size() > 1 && expr->op[1] == '=') bytecode.push_back(BEQ);
+            break;
+        }
         default: throw std::runtime_error("Operator mismatch"); break;
     }
 }
 
 void Compiler::unary_handler(Unary *expr) {
+}
+
+void Compiler::function_handler(Function *expr)
+{
+    if (expr->type == Token::Type::PRINT) {
+        handler(expr->expr.get());
+        bytecode.push_back(PRINT);
+    }
 }
 
 size_t Compiler::add_constant(const std::variant<std::monostate, double, std::string, bool>& constant) {
