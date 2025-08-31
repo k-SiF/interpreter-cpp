@@ -211,6 +211,10 @@ void Parser::print_ast(const Expr* expr) {
         std::cout << "(" << bin->op << " ";
         print_ast(bin->expr.get());
         std::cout << ")";
+    } else if (auto bin = dynamic_cast<const Variable*>(expr)) {
+        std::cout << "(" << bin->left.lexeme << bin->op;
+        print_ast(bin->right.get());
+        std::cout << ")";
     }
 }
 
