@@ -24,6 +24,8 @@ struct CompilerResult {
     int status;
     std::vector<uint8_t> bytecode;
     std::vector<std::variant<double, std::string, bool>> constant_pool;
+    std::vector<std::string> variable_pool;
+    std::unordered_map<size_t, size_t> variable_map;
 };
 
 std::string read_file_contents(const std::string& filename);
@@ -124,9 +126,11 @@ void compile(char *argv[], LexerResult& lexer_r, ParserResult& parser_r, Compile
         Compiler compiler(parser_r.ast);
         compiler_r.bytecode = compiler.compile();
         compiler_r.constant_pool = compiler.get_constant_pool();
+        compiler_r.variable_pool = compiler.get_variable_pool();
+        compiler_r.variable_map = compiler.get_variable_map();
         if (debug_mode) compiler.print_bytecode();
         std::cout << std::endl;
-        VM vm(compiler_r.bytecode, compiler_r.constant_pool);
+        VM vm(compiler_r.bytecode, compiler_r.constant_pool, compiler_r.variable_pool, compiler_r.variable_map);
         std::cout << "RESULT:\n";
         vm.execute();
     }
