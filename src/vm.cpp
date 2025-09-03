@@ -83,25 +83,49 @@ void VM::execute() {
             case GRT: {
                 auto b = stack.back(); stack.pop_back();
                 auto a = stack.back(); stack.pop_back();
-                stack.push_back(std::get<double>(a) > std::get<double>(b));
+                constant_pool.push_back(std::get<double>(a) > std::get<double>(b));
+                if (bytecode[i+1] == VAR) {
+                    store_var = true;
+                    stack.push_back(static_cast<double>(constant_pool.size() - 1));
+                } else {
+                    stack.push_back(std::get<double>(constant_pool.back()));
+                }
                 break;
             }
             case GRTE: {
                 auto b = stack.back(); stack.pop_back();
                 auto a = stack.back(); stack.pop_back();
-                stack.push_back(std::get<double>(a) >= std::get<double>(b));
+                constant_pool.push_back(std::get<double>(a) >= std::get<double>(b));
+                if (bytecode[i+1] == VAR) {
+                    store_var = true;
+                    stack.push_back(static_cast<double>(constant_pool.size() - 1));
+                } else {
+                    stack.push_back(std::get<double>(constant_pool.back()));
+                }
                 break;
             }
             case LSS: {
                 auto b = stack.back(); stack.pop_back();
                 auto a = stack.back(); stack.pop_back();
-                stack.push_back(std::get<double>(a) < std::get<double>(b));
+                constant_pool.push_back(std::get<double>(a) < std::get<double>(b));
+                if (bytecode[i+1] == VAR) {
+                    store_var = true;
+                    stack.push_back(static_cast<double>(constant_pool.size() - 1));
+                } else {
+                    stack.push_back(std::get<double>(constant_pool.back()));
+                }
                 break;
             }
             case LSSE: {
                 auto b = stack.back(); stack.pop_back();
                 auto a = stack.back(); stack.pop_back();
-                stack.push_back(std::get<double>(a) <= std::get<double>(b));
+                constant_pool.push_back(std::get<double>(a) <= std::get<double>(b));
+                if (bytecode[i+1] == VAR) {
+                    store_var = true;
+                    stack.push_back(static_cast<double>(constant_pool.size() - 1));
+                } else {
+                    stack.push_back(std::get<double>(constant_pool.back()));
+                }
                 break;
             }
             case PRINT: {
